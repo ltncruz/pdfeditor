@@ -22,7 +22,7 @@ export function createPdfJsRenderer(pdfjs: PdfJs, sources: SourceStore, options:
   const open = (id: SourceId): Promise<PdfJsNamespace.PDFDocumentProxy> => {
     let doc = docs.get(id);
     if (!doc) {
-      doc = sources.get(id).then((bytes) => pdfjs.getDocument({ data: bytes.slice(), isEvalSupported: false, ...options }).promise);
+      doc = sources.get(id).then((bytes) => pdfjs.getDocument({ ...options, data: bytes.slice(), isEvalSupported: false }).promise);
       docs.set(id, doc);
     }
     return doc;
@@ -56,7 +56,7 @@ export function createPdfJsRenderer(pdfjs: PdfJs, sources: SourceStore, options:
           textLayer.style.height = `${viewport.height}px`;
           textLayer.style.setProperty('--scale-factor', String(viewport.scale));
           textLayer.style.setProperty('--total-scale-factor', String(viewport.scale));
-          const textContent = await page.getTextContent({ includeMarkedContent: true });
+          const textContent = page.streamTextContent({ includeMarkedContent: true, disableNormalization: true });
           if (signal?.aborted) return;
           const TextLayer = getTextLayerConstructor(pdfjs);
           textTask = new TextLayer({ textContentSource: textContent, container: textLayer, viewport });

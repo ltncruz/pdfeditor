@@ -87,7 +87,7 @@ for (const p of found.values()) {
   const bad = tokens.filter((t) => !ALLOWED.has(t));
   if (bad.length) violations.push(`${p.name}@${p.version}: licença fora da política (${p.license})`);
   if (!p.file) violations.push(`${p.name}@${p.version}: sem arquivo de licença no pacote instalado`);
-  else if (FORBIDDEN_TEXT.some((re) => re.test(p.file.text.slice(0, 2000)))) violations.push(`${p.name}@${p.version}: o TEXTO da licença indica GPL/AGPL/LGPL/SSPL`);
+  else if (FORBIDDEN_TEXT.some((re) => re.test(p.file.text))) violations.push(`${p.name}@${p.version}: o TEXTO da licença indica GPL/AGPL/LGPL/SSPL`);
 }
 
 // Ferramenta externa (não distribuída): qpdf, usada só como validador estrutural nos testes.
@@ -99,15 +99,38 @@ if (q.status === 0) {
   if (!/Apache License, Version 2\.0/.test(c)) violations.push('qpdf: licença não confirmada por `qpdf --copyright`');
 }
 
-// Assets copiados para dist/ (lidos do disco, não presumidos)
+// Assets de fontes do PDF.js: auditamos o conteúdo real e também o que o build redistribui.
+// PDF.js 6.3.289 corrigiu LICENSE_LIBERATION: Liberation Sans 1.07.4 é GPLv2 com
+// Liberation Font Exception (copyleft), não OFL. Como a política do Simply PDF é
+// permissiva-only, esses TTF ficam instalados dentro do pacote upstream, mas são
+// explicitamente EXCLUÍDOS de dist/ pelo build.
 const pdfjsDir = resolvePkg('pdfjs-dist', root);
 const fontsDir = join(pdfjsDir, 'standard_fonts');
 const foxit = readFileSync(join(fontsDir, 'LICENSE_FOXIT'), 'utf8');
 const liberation = readFileSync(join(fontsDir, 'LICENSE_LIBERATION'), 'utf8');
-const foxitOk = /Redistribution and use in source and binary forms/.test(foxit) && /Neither the name of Google/.test(foxit);
-const liberationOk = /SIL OPEN FONT LICENSE Version 1\.1/.test(liberation);
+const foxitOk = /Redistribution and use in source and binary forms/i.test(foxit) && /Neither the name of (?:Google|PDFium)/i.test(foxit);
+const liberationIsOfl11 = /SIL\s+OPEN\s+FONT\s+LICENSE[\s\S]{0,80}Version\s+1\.1/i.test(liberation);
+const liberationIsGplWithException =
+  /GNU\s+General\s+Public\s+License\s+v\.?2/i.test(liberation) &&
+  /LIBERATION\s+font software/i.test(liberation) &&
+  /special exception[\s\S]{0,400}embed this font/i.test(liberation);
 if (!foxitOk) violations.push('pdfjs-dist/standard_fonts/LICENSE_FOXIT: não parece BSD-3-Clause');
-if (!liberationOk) violations.push('pdfjs-dist/standard_fonts/LICENSE_LIBERATION: não parece SIL OFL 1.1');
+if (!liberationIsOfl11 && !liberationIsGplWithException) {
+  violations.push('pdfjs-dist/standard_fonts/LICENSE_LIBERATION: licença não reconhecida; revisar antes de distribuir assets Liberation');
+}
+
+// Se já existir um dist/, ele nunca pode conter LiberationSans sob a política atual.
+const distFontsDir = join(root, 'dist', 'standard_fonts');
+if (existsSync(distFontsDir)) {
+  const distributedLiberation = readdirSync(distFontsDir).filter((name) => /^LiberationSans-.*\.ttf$/i.test(name));
+  if (distributedLiberation.length) {
+    violations.push(`dist/standard_fonts redistribui assets Liberation não permissivos: ${distributedLiberation.join(', ')}`);
+  }
+}
+
+const liberationPolicyLine = liberationIsGplWithException
+  ? 'GPL-2.0 com Liberation Font Exception — **não redistribuídas** pelo Simply PDF (política permissiva-only)'
+  : 'SIL Open Font License 1.1 — atualmente não redistribuídas pelo build';
 
 const rows = (scope) =>
   [...found.values()]
@@ -138,9 +161,9 @@ ${rows('dev')}
 | Asset | Licença lida do arquivo | Observação |
 |---|---|---|
 | Fontes Foxit (\`FoxitFixed*.pfb\`, \`FoxitSans*.pfb\`, \`FoxitSerif*.pfb\`, \`FoxitSymbol.pfb\`, \`FoxitDingbats.pfb\`) | BSD-3-Clause (cabeçalho "PDFium Authors" em \`LICENSE_FOXIT\`) | manter o aviso de copyright ao redistribuir |
-| Fontes Liberation (\`LiberationSans-*.ttf\`) | SIL Open Font License 1.1 (\`LICENSE_LIBERATION\`) | OFL permite redistribuição junto com software; não vender a fonte isoladamente |
+| Fontes Liberation (\`LiberationSans-*.ttf\`) | ${liberationPolicyLine} | presentes no pacote upstream, mas excluídas de \`dist/standard_fonts\` pela política de licenças do produto |
 
-Esses assets são usados só pelo viewer para desenhar fontes padrão NÃO incorporadas. O PDF exportado referencia a Helvetica padrão por nome e **não incorpora** nenhuma fonte.
+O build web redistribui somente os assets Foxit/PDFium aprovados. As LiberationSans 1.07.4 do PDF.js 6.3.289 permanecem apenas dentro de \`node_modules\` e não entram no produto. O PDF exportado referencia a Helvetica padrão por nome e **não incorpora** nenhuma fonte.
 
 ## Ferramentas externas (não instaladas via npm e não distribuídas)
 
@@ -154,13 +177,12 @@ ${missingOptional.length ? missingOptional.map((m) => `- \`${m.name}\` (opcional
 
 ## Candidatas NÃO adicionadas (licença ainda por verificar)
 
-O registro npm estava bloqueado neste ambiente (HTTP 403, \`x-deny-reason: host_not_allowed\`), então os pacotes abaixo **não foram instalados** e portanto **não constam em \`package.json\`**. Cada um só entra depois de instalado e com a licença lida do pacote real:
+As dependências abaixo continuam fora do projeto e só devem entrar depois de instaladas e auditadas pelo mesmo mecanismo:
 
 | Candidata | Papel | Situação |
 |---|---|---|
 | vite, @vitejs/plugin-react | build/dev server | pendente (substituído por esbuild em \`scripts/build-web.mjs\`) |
 | vitest | testes do core | pendente (substituído por \`node:test\` + tsx) |
-| @types/react, @types/react-dom | tipos | pendente (shim temporário em \`src/types/react-shim.d.ts\`) |
 | zustand | estado de UI | pendente (a UI usa \`useSyncExternalStore\` sobre \`DocumentSession\`) |
 | qpdf (WASM/binário empacotado) | otimização/criptografia (v0.9) | pendente; só o binário do sistema foi usado em testes |
 | PDFium (WASM) | spike futuro pedido | pendente |

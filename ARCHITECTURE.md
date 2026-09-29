@@ -32,7 +32,7 @@ Consequência: PDF.js, pdf-lib e qpdf ficam **atrás de interfaces** (`SourceRea
 
 O produto pode ser comercial/proprietário. Portanto:
 
-- Só entram dependências permissivas (MIT, Apache-2.0, BSD, ISC, 0BSD, Zlib, OFL para fontes). `scripts/licenses.mjs` lê a licença **do pacote realmente instalado** (package.json + arquivo de licença + busca por GPL/AGPL/LGPL/SSPL no texto) e falha o `verify` se algo sair da política. O resultado fica em `THIRD_PARTY_LICENSES.md`.
+- Só entram no produto dependências/assets compatíveis com a política permissiva (MIT, Apache-2.0, BSD, ISC, 0BSD, Zlib, OFL para fontes). `scripts/licenses.mjs` lê a licença **do pacote realmente instalado**, varre o texto integral por GPL/AGPL/LGPL/SSPL e audita separadamente os assets redistribuídos. No PDF.js 6.3.289, LiberationSans 1.07.4 é GPLv2 com exceção de fonte; esses TTF permanecem no pacote upstream, mas o build os exclui de `dist/`.
 - **MuPDF e Ghostscript não são incorporados** (AGPL/comercial). Só seriam considerados com licença comercial adquirida.
 - Dependência nova = instalar → ler a licença real → registrar → só então usar.
 
@@ -117,7 +117,7 @@ O original permanece intacto (hash conferido em teste) e o sistema nunca faz atu
 
 ## 9. Viewer
 
-- PDF.js (build **legacy**, com polyfills) em worker. Um `PDFDocumentProxy` por origem, cache dentro do `PageRenderer`.
+- PDF.js 6.3.289 (build **legacy**) em worker, com `isEvalSupported: false`; o app não instancia `PDFScriptingManager` e a página aplica CSP que bloqueia scripts externos/inline arbitrários. Um `PDFDocumentProxy` por origem, cache dentro do `PageRenderer`. O viewer monta `TextLayer` sobre o canvas para seleção/cópia do texto existente.
 - Renderização cancelável (`AbortSignal` → `RenderTask.cancel()`), com `devicePixelRatio`.
 - A rotação passada ao viewport é a **efetiva** (base + usuário).
 - Miniaturas são renderizadas só quando entram na área visível (`IntersectionObserver`).
@@ -155,7 +155,7 @@ tests/{core,integration,e2e,fixtures}
 3. **Dirty por posição no histórico**, não por `savedRevision` numérico, para que desfazer até o ponto salvo deixe o documento limpo.
 4. **Testes com `node:test` + tsx e build com esbuild**, não Vitest/Vite: o registro npm estava bloqueado neste ambiente. Ver `THIRD_PARTY_LICENSES.md` (candidatas pendentes).
 5. **Sem Zustand:** `useSyncExternalStore` direto sobre `DocumentSession`.
-6. **PDF.js legacy no navegador:** o build padrão 5.x exige `Map.prototype.getOrInsertComputed`, ausente no Chromium do E2E.
+6. **PDF.js legacy no navegador:** mantemos o build legacy por compatibilidade e previsibilidade no Chromium/E2E. A versão atual é 6.3.289.
 7. **qpdf** foi usado só como validador estrutural nos testes; ainda não é dependência do produto.
 
 ## 13. Próximos passos (fora deste slice)

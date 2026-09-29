@@ -20,3 +20,10 @@ Para abrir o app: `npm run build:web` e sirva `dist/` com qualquer servidor est�
 ## Nota sobre o ambiente de desenvolvimento
 
 `node_modules` deste snapshot foi montado com links para pacotes já instalados globalmente (o registro npm estava bloqueado). Numa máquina com acesso, `npm install` instala as mesmas versões fixas de `package.json`; rode `npm run verify` em seguida.
+
+
+## Segurança e assets do PDF.js
+
+- PDF.js está fixado em `6.3.289` (versão já corrigida para CVE-2026-16633); abertura usa `isEvalSupported: false`, o app não instancia o scripting manager do viewer e `index.html` aplica CSP restritiva.
+- O viewer usa `TextLayer` para permitir selecionar/copiar texto de PDFs digitais. PDFs escaneados continuam exigindo OCR.
+- PDF.js 6.3.289 inclui LiberationSans 1.07.4 sob GPLv2 com Liberation Font Exception. Para manter a política permissiva-only do Simply PDF, o build **não redistribui** esses `.ttf`; `dist/standard_fonts` recebe apenas os assets Foxit/PDFium auditados como BSD-3-Clause.

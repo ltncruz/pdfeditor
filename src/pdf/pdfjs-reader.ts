@@ -19,7 +19,7 @@ async function withDocument<T>(
   fn: (doc: PdfJsNamespace.PDFDocumentProxy) => Promise<T>,
 ): Promise<T> {
   // PDF.js TRANSFERE (destaca) o buffer recebido para o worker: sempre passar uma cópia.
-  const doc = await pdfjs.getDocument({ data: bytes.slice(), isEvalSupported: false, ...options }).promise;
+  const doc = await pdfjs.getDocument({ ...options, data: bytes.slice(), isEvalSupported: false }).promise;
   try {
     return await fn(doc);
   } finally {
