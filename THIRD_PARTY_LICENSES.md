@@ -10,6 +10,7 @@ Gerado por `node scripts/licenses.mjs` (não edite à mão; `npm run licenses --
 |---|---|---|---|---|
 | @napi-rs/canvas | 0.1.100 | MIT | LICENSE (sha256 8802fecf9da4) | pdfjs-dist@5.6.205 |
 | @napi-rs/canvas-linux-x64-gnu | 0.1.100 | MIT | LICENSE (herdado de @napi-rs/canvas@0.1.100) (sha256 8802fecf9da4) | @napi-rs/canvas@0.1.100 |
+| @napi-rs/canvas-linux-x64-musl | 0.1.100 | MIT | LICENSE (herdado de @napi-rs/canvas@0.1.100) (sha256 8802fecf9da4) | @napi-rs/canvas@0.1.100 |
 | @pdf-lib/standard-fonts | 1.0.0 | MIT | LICENSE.md (sha256 45cc2bb9957e) | pdf-lib@1.17.1 |
 | @pdf-lib/upng | 1.0.1 | MIT | LICENSE (sha256 c1fb8861eca2) | pdf-lib@1.17.1 |
 | node-readable-to-web-readable-stream | 0.4.2 | MIT | LICENSE.txt (sha256 d1b111f5a5b6) | pdfjs-dist@5.6.205 |
@@ -49,7 +50,7 @@ Esses assets são usados só pelo viewer para desenhar fontes padrão NÃO incor
 
 | Ferramenta | Versão / licença | Uso |
 |---|---|---|
-| qpdf | qpdf version 11.9.0 — Apache-2.0 (confirmado por `qpdf --copyright`) | apenas nos testes, como validador estrutural independente (`qpdf --check`). Não faz parte do produto neste slice. |
+| qpdf | não encontrado no ambiente | apenas nos testes, como validador estrutural independente (`qpdf --check`). Não faz parte do produto neste slice. |
 
 ## Dependências opcionais não instaladas neste ambiente
 
@@ -57,7 +58,6 @@ Esses assets são usados só pelo viewer para desenhar fontes padrão NÃO incor
 - `@napi-rs/canvas-win32-x64-msvc` (opcional de `@napi-rs/canvas@0.1.100`)
 - `@napi-rs/canvas-win32-arm64-msvc` (opcional de `@napi-rs/canvas@0.1.100`)
 - `@napi-rs/canvas-linux-arm-gnueabihf` (opcional de `@napi-rs/canvas@0.1.100`)
-- `@napi-rs/canvas-linux-x64-musl` (opcional de `@napi-rs/canvas@0.1.100`)
 - `@napi-rs/canvas-linux-arm64-gnu` (opcional de `@napi-rs/canvas@0.1.100`)
 - `@napi-rs/canvas-linux-arm64-musl` (opcional de `@napi-rs/canvas@0.1.100`)
 - `@napi-rs/canvas-darwin-arm64` (opcional de `@napi-rs/canvas@0.1.100`)
