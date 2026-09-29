@@ -24,8 +24,23 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 .thumb .num { font-size: 12px; color: var(--muted); }
 .stage { overflow: auto; background: var(--bg); padding: 24px; }
 .page-frame { position: relative; margin: 0 auto; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-.page-frame canvas { position: absolute; inset: 0; display: block; }
-.overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+.page-frame canvas { position: absolute; inset: 0; display: block; z-index: 0; }
+.textLayer {
+  position: absolute; inset: 0; overflow: hidden; line-height: 1; text-align: initial;
+  transform-origin: 0 0; z-index: 1; user-select: text; -webkit-user-select: text;
+  text-size-adjust: none; -webkit-text-size-adjust: none; forced-color-adjust: none;
+}
+.textLayer :is(span, br) {
+  color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0 0;
+}
+.textLayer span[role=img] { user-select: none; cursor: default; }
+.textLayer ::selection { background: rgba(11, 92, 173, .28); }
+.textLayer br::selection { background: transparent; }
+.textLayer .endOfContent {
+  display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none;
+}
+.textLayer.selecting .endOfContent { top: 0; }
+.overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; z-index: 2; }
 .text-object { position: absolute; white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.2; font-family: Helvetica, Arial, sans-serif; outline: 1px dashed rgba(11,92,173,.55); }
 .status { padding: 6px 12px; border-top: 1px solid var(--line); background: #fff; font-size: 13px; color: var(--muted); display: flex; gap: 12px; }
 .status.error { color: var(--danger); } .status.ok { color: var(--ok); }

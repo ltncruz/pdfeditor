@@ -175,6 +175,39 @@ describe('slice v0.1–v0.5 no navegador', () => {
     assert.deepEqual(errors, [], 'nenhum erro de console/página/rede');
   });
 
+  it('texto original do PDF fica selecionável/copiável sem alterar o documento', async () => {
+    const { page, errors } = await newPage();
+    await page.getByTestId('open-input').setInputFiles({ name: 'sample.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await buildSamplePdf()) });
+    await page.getByTestId('btn-export').waitFor();
+    await page.waitForSelector('[data-testid="text-layer"] span', { timeout: 15_000 });
+
+    const selectMarker = async (): Promise<string> => page.getByTestId('text-layer').evaluate((layer, marker) => {
+      const span = Array.from(layer.querySelectorAll('span')).find((node) => node.textContent?.includes(marker));
+      if (!span) return '';
+      const range = document.createRange();
+      range.selectNodeContents(span);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      return selection?.toString() ?? '';
+    }, MARKERS[0]);
+
+    assert.match(await selectMarker(), new RegExp(MARKERS[0]), 'texto original pode ser selecionado no DOM');
+    assert.ok(!(await page.getByTestId('doc-name').textContent())?.endsWith('•'), 'selecionar texto não marca o documento como alterado');
+
+    await page.getByLabel('Aumentar zoom').click();
+    await page.waitForSelector('[data-testid="page-canvas"][data-render-state="done"]');
+    await page.waitForSelector('[data-testid="text-layer"] span');
+    assert.match(await selectMarker(), new RegExp(MARKERS[0]), 'texto continua selecionável após zoom');
+
+    await page.getByTestId('btn-rotate').click();
+    await page.waitForSelector('[data-testid="page-canvas"][data-render-state="done"][data-rotation="90"]');
+    await page.waitForSelector('[data-testid="text-layer"] span');
+    assert.match(await selectMarker(), new RegExp(MARKERS[0]), 'texto continua selecionável após rotação');
+    assert.ok((await page.getByTestId('doc-name').textContent())?.endsWith('•'), 'a rotação continua sendo registrada como alteração do documento');
+    assert.deepEqual(errors, [], 'nenhum erro de console/página/rede');
+  });
+
   it('arquivo que não é PDF mostra erro claro e a interface continua utilizável', async () => {
     const { page, errors } = await newPage();
     await page.getByTestId('open-input').setInputFiles({ name: 'falso.pdf', mimeType: 'application/pdf', buffer: Buffer.from('isto não é um pdf') });

@@ -13,6 +13,8 @@ export interface RenderRequest {
   readonly rotation: Rotation;
   readonly scale: number;
   readonly canvas: HTMLCanvasElement;
+  /** Camada DOM opcional para texto original selecionável/copiável. */
+  readonly textLayer?: HTMLDivElement;
   readonly signal?: AbortSignal;
 }
 

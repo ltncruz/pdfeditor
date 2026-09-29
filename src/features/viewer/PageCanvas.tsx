@@ -11,9 +11,10 @@ function overlayTransform(rotation: number, w: number, h: number): string {
   }
 }
 
-/** Página do viewer: canvas do conteúdo original + overlay com os objetos do MODELO (fonte de verdade). */
+/** Página do viewer: canvas + text layer selecionável do original + overlay com objetos do MODELO. */
 export function PageCanvas({ page, scale, renderer }: { page: Page; scale: number; renderer: PageRenderer }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textLayerRef = useRef<HTMLDivElement | null>(null);
   const [renderState, setRenderState] = useState('pending');
   const rotation = effectiveRotation(page);
   const size = displaySize(page);
@@ -21,7 +22,8 @@ export function PageCanvas({ page, scale, renderer }: { page: Page; scale: numbe
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const textLayer = textLayerRef.current;
+    if (!canvas || !textLayer) return;
     setRenderState('rendering');
     if (page.origin.kind === 'blank') {
       canvas.width = Math.round(size.w * scale);
@@ -30,12 +32,15 @@ export function PageCanvas({ page, scale, renderer }: { page: Page; scale: numbe
       canvas.style.height = `${canvas.height}px`;
       const ctx = canvas.getContext('2d');
       if (ctx) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+      textLayer.replaceChildren();
+      textLayer.style.width = `${canvas.width}px`;
+      textLayer.style.height = `${canvas.height}px`;
       setRenderState('done');
       return;
     }
     const ctrl = new AbortController();
     renderer
-      .render({ sourceId: page.origin.sourceId, index: page.origin.index, rotation, scale, canvas, signal: ctrl.signal })
+      .render({ sourceId: page.origin.sourceId, index: page.origin.index, rotation, scale, canvas, textLayer, signal: ctrl.signal })
       .then(() => { if (!ctrl.signal.aborted) setRenderState('done'); })
       .catch((error: unknown) => {
         if (ctrl.signal.aborted) return;
@@ -50,6 +55,7 @@ export function PageCanvas({ page, scale, renderer }: { page: Page; scale: numbe
   return (
     <div className="page-frame" style={{ width: size.w * scale, height: size.h * scale }}>
       <canvas ref={canvasRef} data-testid="page-canvas" data-render-state={renderState} data-page-id={page.id} data-rotation={String(rotation)} />
+      <div ref={textLayerRef} className="textLayer" data-testid="text-layer" aria-label="Texto selecionável do PDF" />
       <div className="overlay" style={{ width: w, height: h, transform: overlayTransform(rotation, w, h) }}>
         {page.objects.map((o) => (
           <div
